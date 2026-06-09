@@ -9,7 +9,18 @@ const envConf = require(path.resolve(__dirname + "/../config/env/" + finalEnv.to
 
 const config = { ...allConf, ...envConf }
 
+// Log a redacted version of the configuration to avoid leaking secrets or raw HTML
 console.log(`Current Config:`)
-console.log(util.inspect(config, false, null))
+const safeConfig = _.clone(config);
+if (safeConfig.environmentalScripts) {
+	safeConfig.environmentalScripts = `[${safeConfig.environmentalScripts.length} scripts redacted]`;
+}
+if (safeConfig.cookieSecret) {
+	safeConfig.cookieSecret = '[REDACTED]';
+}
+if (safeConfig.cryptoKey) {
+	safeConfig.cryptoKey = '[REDACTED]';
+}
+console.log(util.inspect(safeConfig, false, null))
 
 module.exports = config;

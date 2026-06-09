@@ -103,16 +103,27 @@ const index = (app, db) => {
         try {
             const redirectUrl = validateRedirectUrl(req.query.url);
             return res.redirect(redirectUrl);
-    // Helper to validate tutorial page names
+        } catch (err) {
+            return res.status(400).send("Invalid redirect target");
+        }
+    });
+
+    // Handle tutorial pages
     const validateTutorialPage = (page) => {
         const allowedPages = ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "redos", "ssrf"];
-        
+
         if (allowedPages.includes(page)) {
             return page;
         }
-        
+
         throw new Error("Invalid tutorial page");
     };
+
+    app.get("/tutorial", (req, res) => {
+        return res.render("tutorial/a1", {
+            environmentalScripts
+        });
+    });
 
     app.get("/tutorial/:page", (req, res) => {
         try {
@@ -122,19 +133,7 @@ const index = (app, db) => {
             });
         } catch (err) {
             return res.status(404).send("Tutorial page not found");
-        }Whitelist of allowed tutorial pages
-        const allowedTutorialPages = new Set(["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "redos", "ssrf"]);
-        
-        // Validate page is in whitelist
-        if (!allowedTutorialPages.has(page)) {
-            return res.status(404).send("Tutorial page not found");
         }
-        
-        // Page is whitelisted - safe to render
-        const safePage = page;
-        return res.render(`tutorial/${safePage}`, {
-            environmentalScripts
-        });
     });
 
     // Research Page
