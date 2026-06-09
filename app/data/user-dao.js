@@ -34,10 +34,12 @@ function UserDAO(db) {
             if (err) {
                 return callback(err, null);
             }
-            console.log(typeof(id));
 
             user._id = id;
-            usersCol.insert(user, (err, result) => !err ? callback(null, result.ops[0]) : callback(err, null));
+            usersCol.insertOne(user, (err, result) => {
+                if (err) return callback(err, null);
+                return callback(null, result.ops ? result.ops[0] : result.insertedId ? { ...user } : user);
+            });
         });
     };
 
@@ -52,8 +54,8 @@ function UserDAO(db) {
     this.validateLogin = (userName, password, callback) => {
 
         // Helper function to compare passwords
-        const comparePassword = (fromDB, fromUser) => {
-            return bcrypt.compareSync(fromUser, fromDB);
+        const comparePassword = (plainPassword, hashedPassword) => {
+            return bcrypt.compareSync(plainPassword, hashedPassword);
         }
 
         // Callback to pass to MongoDB that validates a user document
@@ -97,17 +99,16 @@ function UserDAO(db) {
     };
 
     this.getNextSequence = (name, callback) => {
-        db.collection("counters").findAndModify({
-                _id: name
-            }, [], {
-                $inc: {
-                    seq: 1
-                }
-            }, {
-                new: true
-            },
-            (err, data) =>  err ? callback(err, null) : callback(null, data.value.seq));
+        db.collection("counters").findOneAndUpdate(
+            { _id: name },
+            { $inc: { seq: 1 } },
+            { returnDocument: "after", upsert: true }
+        , (err, data) => {
+            if (err) return callback(err, null);
+            if (!data || !data.value) return callback(new Error("Unable to get next sequence"), null);
+            callback(null, data.value.seq);
+        });
     };
 }
 
-module.exports = { UserDAO };
+module.exports = { UserDAO };

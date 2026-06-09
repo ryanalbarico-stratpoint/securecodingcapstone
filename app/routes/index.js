@@ -54,8 +54,12 @@ const index = (app, db) => {
     app.post("/contributions", isLoggedIn, contributionsHandler.handleContributionsUpdate);
 
     // Benefits Page
-    app.get("/benefits", isLoggedIn, isAdmin, benefitsHandler.displayBenefits);
-    app.post("/benefits", isLoggedIn, isAdmin, benefitsHandler.updateBenefits);
+    app.get("/benefits", isLoggedIn, benefitsHandler.displayBenefits);
+    app.post("/benefits", isLoggedIn, benefitsHandler.updateBenefits);
+    /* Fix for A7 - checks user role to implement  Function Level Access Control
+     app.get("/benefits", isLoggedIn, isAdmin, benefitsHandler.displayBenefits);
+     app.post("/benefits", isLoggedIn, isAdmin, benefitsHandler.updateBenefits);
+     */
 
     // Allocations Page
     app.get("/allocations/:userId", isLoggedIn, allocationsHandler.displayAllocations);
@@ -64,61 +68,54 @@ const index = (app, db) => {
     app.get("/memos", isLoggedIn, memosHandler.displayMemos);
     app.post("/memos", isLoggedIn, memosHandler.addMemos);
 
-    // Handle redirect for learning resources link
-    // Helper to validate redirect URLs against whitelist
-    const validateRedirectUrl = (url) => {
-        const allowedHosts = [
-            "https://www.khanacademy.org"
-        ];
-        const allowedPaths = [
-            "/dashboard",
-            "/profile",
-            "/contributions",
-            "/allocations",
-            "/memos",
-            "/research",
-            "/benefits"
-        ];
-        
-        // Check against internal paths
-        if (typeof url === "string" && url.startsWith("/")) {
-            if (allowedPaths.includes(url)) {
-                return url;
-            }
-        }
-        
-        // Check against external hosts
-        if (typeof url === "string") {
-            for (const host of allowedHosts) {
-                if (url.startsWith(host)) {
-                    return url;
-                }
-            }
-        }
-        
-        throw new Error("Invalid redirect URL");
+    const getSafeRedirectUrl = (url) => {
+        if (!url || typeof url !== "string") return "/learn";
+        if (url.indexOf("\n") !== -1 || url.indexOf("\r") !== -1) return "/learn";
+        if (url.startsWith("//")) return "/learn";
+        if (url.startsWith("/")) return url;
+        return "/learn";
     };
 
+    // Handle redirect for learning resources link
     app.get("/learn", isLoggedIn, (req, res) => {
-        try {
-            const redirectUrl = validateRedirectUrl(req.query.url);
-            return res.redirect(redirectUrl);
-        } catch (err) {
-            return res.status(400).send("Invalid redirect target");
-        }
+        return res.redirect(getSafeRedirectUrl(req.query.url));
     });
 
-    // Handle tutorial pages
-    const validateTutorialPage = (page) => {
-        const allowedPages = ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "redos", "ssrf"];
-
-        if (allowedPages.includes(page)) {
-            return page;
+    const renderTutorialPage = (page, res) => {
+        switch (page) {
+            case "a1":
+                return res.render("tutorial/a1", { environmentalScripts });
+            case "a2":
+                return res.render("tutorial/a2", { environmentalScripts });
+            case "a3":
+                return res.render("tutorial/a3", { environmentalScripts });
+            case "a4":
+                return res.render("tutorial/a4", { environmentalScripts });
+            case "a5":
+                return res.render("tutorial/a5", { environmentalScripts });
+            case "a6":
+                return res.render("tutorial/a6", { environmentalScripts });
+            case "a7":
+                return res.render("tutorial/a7", { environmentalScripts });
+            case "a8":
+                return res.render("tutorial/a8", { environmentalScripts });
+            case "a9":
+                return res.render("tutorial/a9", { environmentalScripts });
+            case "a10":
+                return res.render("tutorial/a10", { environmentalScripts });
+            case "redos":
+                return res.render("tutorial/redos", { environmentalScripts });
+            case "ssrf":
+                return res.render("tutorial/ssrf", { environmentalScripts });
+            default:
+                return res.status(404).render("error-template", {
+                    message: "Tutorial page not found",
+                    environmentalScripts
+                });
         }
-
-        throw new Error("Invalid tutorial page");
     };
 
+    // Handle redirect for learning resources link
     app.get("/tutorial", (req, res) => {
         return res.render("tutorial/a1", {
             environmentalScripts
@@ -126,14 +123,7 @@ const index = (app, db) => {
     });
 
     app.get("/tutorial/:page", (req, res) => {
-        try {
-            const page = validateTutorialPage(req.params.page);
-            return res.render(`tutorial/${page}`, {
-                environmentalScripts
-            });
-        } catch (err) {
-            return res.status(404).send("Tutorial page not found");
-        }
+        return renderTutorialPage(req.params.page, res);
     });
 
     // Research Page
