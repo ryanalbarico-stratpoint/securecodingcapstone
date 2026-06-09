@@ -54,12 +54,8 @@ const index = (app, db) => {
     app.post("/contributions", isLoggedIn, contributionsHandler.handleContributionsUpdate);
 
     // Benefits Page
-    app.get("/benefits", isLoggedIn, benefitsHandler.displayBenefits);
-    app.post("/benefits", isLoggedIn, benefitsHandler.updateBenefits);
-    /* Fix for A7 - checks user role to implement  Function Level Access Control
-     app.get("/benefits", isLoggedIn, isAdmin, benefitsHandler.displayBenefits);
-     app.post("/benefits", isLoggedIn, isAdmin, benefitsHandler.updateBenefits);
-     */
+    app.get("/benefits", isLoggedIn, isAdmin, benefitsHandler.displayBenefits);
+    app.post("/benefits", isLoggedIn, isAdmin, benefitsHandler.updateBenefits);
 
     // Allocations Page
     app.get("/allocations/:userId", isLoggedIn, allocationsHandler.displayAllocations);
@@ -69,23 +65,74 @@ const index = (app, db) => {
     app.post("/memos", isLoggedIn, memosHandler.addMemos);
 
     // Handle redirect for learning resources link
-    app.get("/learn", isLoggedIn, (req, res) => {
-        // Insecure way to handle redirects by taking redirect url from query string
-        return res.redirect(req.query.url);
-    });
+    // Helper to validate redirect URLs against whitelist
+    const validateRedirectUrl = (url) => {
+        const allowedHosts = [
+            "https://www.khanacademy.org"
+        ];
+        const allowedPaths = [
+            "/dashboard",
+            "/profile",
+            "/contributions",
+            "/allocations",
+            "/memos",
+            "/research",
+            "/benefits"
+        ];
+        
+        // Check against internal paths
+        if (typeof url === "string" && url.startsWith("/")) {
+            if (allowedPaths.includes(url)) {
+                return url;
+            }
+        }
+        
+        // Check against external hosts
+        if (typeof url === "string") {
+            for (const host of allowedHosts) {
+                if (url.startsWith(host)) {
+                    return url;
+                }
+            }
+        }
+        
+        throw new Error("Invalid redirect URL");
+    };
 
-    // Handle redirect for learning resources link
-    app.get("/tutorial", (req, res) => {
-        return res.render("tutorial/a1", {
-            environmentalScripts
-        });
-    });
+    app.get("/learn", isLoggedIn, (req, res) => {
+        try {
+            const redirectUrl = validateRedirectUrl(req.query.url);
+            return res.redirect(redirectUrl);
+    // Helper to validate tutorial page names
+    const validateTutorialPage = (page) => {
+        const allowedPages = ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "redos", "ssrf"];
+        
+        if (allowedPages.includes(page)) {
+            return page;
+        }
+        
+        throw new Error("Invalid tutorial page");
+    };
 
     app.get("/tutorial/:page", (req, res) => {
-        const {
-            page
-        } = req.params
-        return res.render(`tutorial/${page}`, {
+        try {
+            const page = validateTutorialPage(req.params.page);
+            return res.render(`tutorial/${page}`, {
+                environmentalScripts
+            });
+        } catch (err) {
+            return res.status(404).send("Tutorial page not found");
+        }Whitelist of allowed tutorial pages
+        const allowedTutorialPages = new Set(["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "redos", "ssrf"]);
+        
+        // Validate page is in whitelist
+        if (!allowedTutorialPages.has(page)) {
+            return res.status(404).send("Tutorial page not found");
+        }
+        
+        // Page is whitelisted - safe to render
+        const safePage = page;
+        return res.render(`tutorial/${safePage}`, {
             environmentalScripts
         });
     });

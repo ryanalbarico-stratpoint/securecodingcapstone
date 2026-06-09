@@ -32,6 +32,18 @@ function BenefitsHandler(db) {
             benefitStartDate
         } = req.body;
 
+        const benefitDatePattern = /^\d{4}-\d{2}-\d{2}$/;
+        if (!benefitDatePattern.test(benefitStartDate)) {
+            return res.status(400).render("benefits", {
+                users: [],
+                user: {
+                    isAdmin: true
+                },
+                updateError: "Invalid benefits start date format.",
+                environmentalScripts
+            });
+        }
+
         benefitsDAO.updateBenefits(userId, benefitStartDate, (error) => {
 
             if (error) return next(error);

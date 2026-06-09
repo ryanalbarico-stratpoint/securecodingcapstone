@@ -9,8 +9,8 @@ function MemosHandler(db) {
     const memosDAO = new MemosDAO(db);
 
     this.addMemos = (req, res, next) => {
-
-        memosDAO.insert(req.body.memo, (err, docs) => {
+        const memo = (req.body.memo || "").toString().trim().slice(0, 1000);
+        memosDAO.insert(memo, (err, docs) => {
             if (err) return next(err);
             this.displayMemos(req, res, next);
         });

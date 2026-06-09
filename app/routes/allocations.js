@@ -9,18 +9,27 @@ function AllocationsHandler(db) {
     const allocationsDAO = new AllocationsDAO(db);
 
     this.displayAllocations = (req, res, next) => {
-        /*
-        // Fix for A4 Insecure DOR -  take user id from session instead of from URL param
-        const { userId } = req.session;
-        */
         const {
             userId
-        } = req.params;
+        } = req.session;
         const {
             threshold
-        } = req.query
+        } = req.query;
 
-        allocationsDAO.getByUserIdAndThreshold(userId, threshold, (err, allocations) => {
+        let parsedThreshold;
+        if (threshold) {
+            parsedThreshold = parseInt(threshold, 10);
+            if (!Number.isInteger(parsedThreshold) || parsedThreshold < 0 || parsedThreshold > 99) {
+                return res.status(400).render("allocations", {
+                    userId,
+                    allocations: [],
+                    environmentalScripts,
+                    updateError: "Threshold must be a number between 0 and 99"
+                });
+            }
+        }
+
+        allocationsDAO.getByUserIdAndThreshold(userId, parsedThreshold, (err, allocations) => {
             if (err) return next(err);
             return res.render("allocations", {
                 userId,

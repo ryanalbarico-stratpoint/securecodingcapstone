@@ -64,7 +64,7 @@
                                     <td>Employee Pre-Tax</td>
                                     <td>{{ preTax |default(0)}} %</td>
                                     <td>
-                                        <input type="text" name="preTax" value="0"></input>
+                                        <input type="number" min="0" max="30" name="preTax" value="0"></input>
                                         <span>%</span>
                                     </td>
                                 </tr>
@@ -72,7 +72,7 @@
                                     <td>Roth Contribution</td>
                                     <td>{{ roth |default(0)}} %</td>
                                     <td>
-                                        <input type="text" name="roth" value="0"></input>
+                                        <input type="number" min="0" max="30" name="roth" value="0"></input>
                                         <span>%</span>
                                     </td>
                                 </tr>
@@ -80,16 +80,13 @@
                                     <td>Employee After Tax</td>
                                     <td>{{ afterTax |default(0)}} %</td>
                                     <td>
-                                        <input type="text" name="afterTax" value="0"></input>
+                                        <input type="number" min="0" max="30" name="afterTax" value="0"></input>
                                         <span>%</span>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
-                        <!-- Fix for A8 - CSRF -->
-                        <!--
                         <input type="hidden" name="_csrf" value="{{csrftoken}}"></input>
-                        -->
                         <button type="submit" class="btn btn-default">Submit</button>
 
                     </form>

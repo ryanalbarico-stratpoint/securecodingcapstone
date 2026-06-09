@@ -4,6 +4,8 @@ const express = require("express");
 const favicon = require("serve-favicon");
 const bodyParser = require("body-parser");
 const session = require("express-session");
+const helmet = require("helmet");
+const csurf = require("csurf");
 const consolidate = require("consolidate"); // Templating library adapter for Express
 const swig = require("swig");
 const MongoClient = require("mongodb").MongoClient; // Driver for connecting to MongoDB
@@ -23,6 +25,8 @@ MongoClient.connect(db, (err, db) => {
 
 
     // Adding/ remove HTTP Headers for security
+    app.set("trust proxy", 1);
+    app.use(helmet());
     app.use(favicon(__dirname + "/app/assets/favicon.ico"));
 
     // Express middleware to populate "req.body" so we can access POST variables
@@ -33,20 +37,34 @@ MongoClient.connect(db, (err, db) => {
     }));
 
     // Enable session management using express middleware
+    const isProduction = process.env.NODE_ENV === "production";
     app.use(session({
+        name: "nodegoat_sessionId",
         secret: cookieSecret,
-        // Both mandatory in Express v4
-        saveUninitialized: true,
-        resave: true
-
+        saveUninitialized: false,
+        resave: false,
+        cookie: {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            path: "/",
+            domain: isProduction ? undefined : "localhost",
+            maxAge: 24 * 60 * 60 * 1000,
+            expires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        }
     }));
 
     // Register templating engine
     app.engine(".html", consolidate.swig);
     app.set("view engine", "html");
     app.set("views", `${__dirname}/app/views`);
-    app.use(express.static(`${__dirname}/app/assets`));
+    app.use(express.static(`${__dirname}/app/assets`, { dotfiles: "ignore", maxAge: "1d" }));
 
+    app.use(csurf());
+    app.use((req, res, next) => {
+        res.locals.csrftoken = req.csrfToken();
+        next();
+    });
 
     // Initializing marked library
     marked.setOptions({
@@ -59,8 +77,7 @@ MongoClient.connect(db, (err, db) => {
 
     // Template system setup
     swig.setDefaults({
-        // Autoescape disabled
-        autoescape: false
+        autoescape: true
     });
 
     // HTTP connection

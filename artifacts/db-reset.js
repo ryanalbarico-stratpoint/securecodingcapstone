@@ -7,6 +7,7 @@
 // NODE_ENV=production node artifacts/db-reset.js
 
 const { MongoClient } = require("mongodb");
+const bcrypt = require("bcryptjs");
 const { db } = require("../config/config");
 
 const USERS_TO_INSERT = [
@@ -98,7 +99,12 @@ MongoClient.connect(db, (err, db) =>  {
         console.log("Users to insert:");
         USERS_TO_INSERT.forEach((user) => console.log(JSON.stringify(user)));
 
-        usersCol.insertMany(USERS_TO_INSERT, (err, data) => {
+        const usersToInsert = USERS_TO_INSERT.map((user) => ({
+            ...user,
+            password: bcrypt.hashSync(user.password, bcrypt.genSaltSync(10))
+        }));
+
+        usersCol.insertMany(usersToInsert, (err, data) => {
             const finalAllocations = [];
 
             // We can't continue if error here
