@@ -81,41 +81,6 @@ const index = (app, db) => {
         return res.redirect(getSafeRedirectUrl(req.query.url));
     });
 
-    const renderTutorialPage = (page, res) => {
-        switch (page) {
-            case "a1":
-                return res.render("tutorial/a1", { environmentalScripts });
-            case "a2":
-                return res.render("tutorial/a2", { environmentalScripts });
-            case "a3":
-                return res.render("tutorial/a3", { environmentalScripts });
-            case "a4":
-                return res.render("tutorial/a4", { environmentalScripts });
-            case "a5":
-                return res.render("tutorial/a5", { environmentalScripts });
-            case "a6":
-                return res.render("tutorial/a6", { environmentalScripts });
-            case "a7":
-                return res.render("tutorial/a7", { environmentalScripts });
-            case "a8":
-                return res.render("tutorial/a8", { environmentalScripts });
-            case "a9":
-                return res.render("tutorial/a9", { environmentalScripts });
-            case "a10":
-                return res.render("tutorial/a10", { environmentalScripts });
-            case "redos":
-                return res.render("tutorial/redos", { environmentalScripts });
-            case "ssrf":
-                return res.render("tutorial/ssrf", { environmentalScripts });
-            default:
-                return res.status(404).render("error-template", {
-                    message: "Tutorial page not found",
-                    environmentalScripts
-                });
-        }
-    };
-
-    // Handle redirect for learning resources link
     app.get("/tutorial", (req, res) => {
         return res.render("tutorial/a1", {
             environmentalScripts
@@ -123,7 +88,12 @@ const index = (app, db) => {
     });
 
     app.get("/tutorial/:page", (req, res) => {
-        return renderTutorialPage(req.params.page, res);
+        const {
+            page
+        } = req.params;
+        return res.render(`tutorial/${page}`, {
+            environmentalScripts
+        });
     });
 
     // Research Page
